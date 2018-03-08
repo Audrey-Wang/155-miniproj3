@@ -428,7 +428,7 @@ class HiddenMarkovModel:
 
         return emission, states
 
-    def generate_line(self, syllables, words, start_state=-1):
+    def generate_line(self, syllables, words, start_state=-1, rhyme=""):
         '''
         Generates an emission from either the given start state, or a 
         randomly chosen state.
@@ -515,9 +515,12 @@ class HiddenMarkovModel:
         
         Returns:
             rhyme:          Whether they rhyme.
-            i:              Ind. of rhyming pronunc. of word1 (-1 if no rhyme)
-            j:              Ind. of rhyming pronunc. of word2 (-1 if no rhyme)
+            i:              Ind. of rhyming pronunc. of word1 (-1 if no word)
+            j:              Ind. of rhyming pronunc. of word2 (-1 if no word)
         '''
+        if len(word1) == 0:
+            return True, -1, -1
+        
         w1 = syllables[word1]
         w2 = syllables[word2]
         for i in range(len(w1)):
