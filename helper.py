@@ -40,6 +40,7 @@ def mask():
 # HMM FUNCTIONS
 ####################
 
+#preprocessing done in the below function
 def parse_observations(text):
     # Convert text to dataset.
     lines = [line.split() for line in text.split('\n') if line.split()]
@@ -52,13 +53,18 @@ def parse_observations(text):
         obs_elem = []
         for word in line:
             print(word)
+            #store puncuation as "words" in obs_map
             puncuation = [':', ';', '.', ',', '!', '?']
-            
-            #for punc in puncuation
-
+            end = 0
+            for punc in puncuation:
+                if word[-1] == punc:
+                    end, endp = 1, punc
+                    print(endp)
+                    break
             #keep hypens and apostrophes
             word = re.sub(r'[^\w\-\']', '', word).lower()
             print(word)
+
             if word not in obs_map:
                 # Add unique words to the observations map.
                 obs_map[word] = obs_counter
@@ -66,10 +72,16 @@ def parse_observations(text):
             
             # Add the encoded word.
             obs_elem.append(obs_map[word])
-        
+
+            if (end == 1 and endp not in obs_map):
+                obs_map[endp] = obs_counter
+                obs_counter += 1
+                obs_elem.append(obs_map[endp])
+
         # Add the encoded sequence.
         obs.append(obs_elem)
 
+    print(obs_map)
     return obs, obs_map
 
 text = open(os.path.join(os.getcwd(), 'data/shakespeare.txt')).read()
