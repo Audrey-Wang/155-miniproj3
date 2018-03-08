@@ -470,21 +470,30 @@ class HiddenMarkovModel:
                     probs.append(0)
                     continue
 
-                # Check for stress
+                # Check for word requirements
+                #   1. Number of syllables
+                #   2. Stresses (primary stress must fall in proper place)
+                #   3. Rhyme with given given word if line is completed
                 try:
                     stress = re.sub(r'[^\d]*', '', ''.join(syllables[word][0]))
                 except KeyError:
                     probs.append(0)
                     continue
+                try:
+                    first_stress = stress.index("1")
+                except:
+                    first_stress = 0
 
-                # Check for line length (10 syllables)
                 num_syls = len(stress)
-                if  num_syls != 1 and \
-                    (int(stress[0]) != stressed or num_syls > syllables_left):
+                if num_syls != 1 and \
+                    (first_stress % 2 == stressed or \
+                     num_syls > syllables_left):
                     probs.append(0)
                 else:
                     probs.append(self.O[state][e])
             
+                # Check for rhyme !!!! TODO !!!!
+                
             probs = [x / sum(probs) for x in probs]
             e = random.choices(range(self.D), probs)
             emission.append(e[0])
