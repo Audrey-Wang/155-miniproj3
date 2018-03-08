@@ -6,7 +6,8 @@ from nltk.corpus import cmudict
 from HMM import unsupervised_HMM
 from helper import (
     parse_observations,
-    generate_line,
+    generate_quatrain,
+    generate_couplet,
 )
 
 # PREPROCESSING
@@ -21,7 +22,7 @@ for punct in [".", ",", ":", ";", "!", "?"]:
     syllables.update({punct:[[]]})
 
 # UNSUPERVISED LEARNING
-hmm8 = unsupervised_HMM(obs, 1, 10)
+hmm8 = unsupervised_HMM(obs, 16, 100)
 
 # POETRY GENERATION, PART 1: HMMs
 # TODO: write poem generation using hmm.generate_emission()
@@ -33,5 +34,11 @@ hmm8 = unsupervised_HMM(obs, 1, 10)
 # - keep in mind last words may have special syllable counts and also 
 #   need to rhyme
 print('Sample Sentence:\n====================')
-generate_line(hmm8, syllables, obs_map)
+generate_quatrain(hmm8, syllables, obs_map)
+print()
+generate_quatrain(hmm8, syllables, obs_map)
+print() 
+generate_quatrain(hmm8, syllables, obs_map)
+print()
+generate_couplet(hmm8, syllables, obs_map)
 

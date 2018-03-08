@@ -96,21 +96,33 @@ def sample_sentence(hmm, obs_map, n_words=100):
     emission, states = hmm.generate_line(n_words)
     sentence = [obs_map_r[i] for i in emission]
 
-<<<<<<< HEAD
-    return ' '.join(sentence).capitalize() + '...'
-=======
     return ' '.join(sentence).capitalize() + '...'
 
-def generate_line(hmm, syllables, obs_map):
+def generate_quatrain(hmm, syllables, obs_map):
     # Get reverse map.
     obs_map_r = obs_map_reverser(obs_map)
 
     # Sample and convert sentence.
-    for i in range(14):
-        emission, states = hmm.generate_line(syllables, obs_map_r)
+    rhyme_word = ['.', '.']
+    start_state = -1
+    for i in range(4):
+        emission, start_state = hmm.generate_line(syllables, obs_map_r, start_state, rhyme=rhyme_word[i % 2])
         sentence = [obs_map_r[i] for i in emission]
+        print(' '.join(sentence).capitalize())
+        rhyme_word[i % 2] = obs_map_r[emission[-1]]
 
-        print(' '.join(sentence).capitalize() + '...')
+def generate_couplet(hmm, syllables, obs_map):
+    # Get reverse map.
+    obs_map_r = obs_map_reverser(obs_map)
+
+    # Sample and convert sentence.
+    rhyme_word = '.'
+    start_state = -1
+    for i in range(2):
+        emission, start_state = hmm.generate_line(syllables, obs_map_r, start_state, rhyme=rhyme_word)
+        sentence = [obs_map_r[i] for i in emission]
+        print(' '.join(sentence).capitalize())
+        rhyme_word = obs_map_r[emission[-1]]
 
 
 ####################
@@ -242,4 +254,3 @@ def main():
     # print(sample_sentence(hmm8, obs_map, n_words=25))
 
 main()
->>>>>>> bc87ec198b9d2c13c618ef781cc069bfb53ba864

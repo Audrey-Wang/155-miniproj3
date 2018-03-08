@@ -428,7 +428,7 @@ class HiddenMarkovModel:
 
         return emission, states
 
-    def generate_line(self, syllables, words, start_state=-1, rhyme="way"): # TODO: should be ".", not "cat"
+    def generate_line(self, syllables, words, start_state=-1, rhyme="."): # TODO: should be ".", not "cat"
         '''
         Generates an emission from either the given start state, or a 
         randomly chosen state.
@@ -469,9 +469,14 @@ class HiddenMarkovModel:
             for e in range(len(self.O[state])):
                 word = words[e]
                 word = ''.join(filter(lambda x: x.isalpha(), word))
+                word_for_stress = word
                 if word == '':
                     probs.append(0)
                     continue
+                if word[0] == "'":
+                    word_for_stress = word[1:]
+                if len(word) > 2 and word[-2] == "'":
+                    word_for_stress = word[:-2]
 
                 # Check for word requirements
                 #   1. Number of syllables
@@ -479,8 +484,8 @@ class HiddenMarkovModel:
                 #   3. Rhyme with given given word if line is completed
                 # TODO: enforce syllables base on rhyme
                 try:
-                    stress = re.sub(r'[^\d]*', '', ''.join(syllables[word][0]))
-                    rhymes, pron1, pron2 = self.is_rhyme(rhyme, word, syllables)
+                    stress = re.sub(r'[^\d]*', '', ''.join(syllables[word_for_stress][0]))
+                    rhymes, pron1, pron2 = self.is_rhyme(rhyme, word_for_stress, syllables)
                 except KeyError:
                     probs.append(0)
                     rhymes = False
@@ -501,10 +506,14 @@ class HiddenMarkovModel:
                 # Check for rhyme !!!! TODO !!!!
                 
             probs = [x / sum(probs) for x in probs]
-            e = random.choices(range(self.D), probs)
-            emission.append(e[0])
-            word = words[e[0]]
-            stress = re.sub(r'[^\d]*', '', ''.join(syllables[word][0]))
+            e = random.choices(range(self.D), probs)[0]
+            emission.append(e)
+            word = words[e]
+            if word[0] == "'":
+                word_for_stress = word[1:]
+            if len(word) > 2 and word[-2] == "'":
+                word_for_stress = word[:-2]
+            stress = re.sub(r'[^\d]*', '', ''.join(syllables[word_for_stress][0]))
             num_syllables += len(stress)
 
             # Sample next state.
@@ -518,7 +527,7 @@ class HiddenMarkovModel:
             next_state -= 1
             state = next_state
 
-        return emission, states
+        return emission, next_state
 
     def is_rhyme(self, word1, word2, syllables):
         '''
