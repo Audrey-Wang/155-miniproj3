@@ -93,10 +93,21 @@ def sample_sentence(hmm, obs_map, n_words=100):
     obs_map_r = obs_map_reverser(obs_map)
 
     # Sample and convert sentence.
-    emission, states = hmm.generate_emission(n_words)
+    emission, states = hmm.generate_line(n_words)
     sentence = [obs_map_r[i] for i in emission]
 
     return ' '.join(sentence).capitalize() + '...'
+
+def generate_line(hmm, syllables, obs_map):
+    # Get reverse map.
+    obs_map_r = obs_map_reverser(obs_map)
+
+    # Sample and convert sentence.
+    for i in range(14):
+        emission, states = hmm.generate_line(syllables, obs_map_r)
+        sentence = [obs_map_r[i] for i in emission]
+
+        print(' '.join(sentence).capitalize() + '...')
 
 
 ####################
@@ -223,8 +234,8 @@ def animate_emission(hmm, obs_map, M=8, height=12, width=12, delay=1):
 def main():
     text = open(os.path.join(os.getcwd(), 'data/shakespeare.txt')).read()
     obs, obs_map = parse_observations(text)
-    hmm8 = unsupervised_HMM(obs, 5, 20)
-    print('Sample Sentence:\n====================')
-    print(sample_sentence(hmm8, obs_map, n_words=25))
+    #hmm8 = unsupervised_HMM(obs, 5, 20)
+    # print('Sample Sentence:\n====================')
+    # print(sample_sentence(hmm8, obs_map, n_words=25))
 
 main()

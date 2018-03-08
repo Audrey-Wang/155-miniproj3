@@ -4,9 +4,9 @@ import numpy as np
 from nltk.corpus import cmudict
 
 from HMM import unsupervised_HMM
-from HMM_helper import (
+from helper import (
     parse_observations,
-    sample_sentence,
+    generate_line,
 )
 
 # PREPROCESSING
@@ -19,7 +19,7 @@ obs, obs_map = parse_observations(text)
 syllables = cmudict.dict()
 
 # UNSUPERVISED LEARNING
-hmm8 = unsupervised_HMM(obs, 10, 100)
+hmm8 = unsupervised_HMM(obs, 1, 10)
 
 # POETRY GENERATION, PART 1: HMMs
 # TODO: write poem generation using hmm.generate_emission()
@@ -31,5 +31,5 @@ hmm8 = unsupervised_HMM(obs, 10, 100)
 # - keep in mind last words may have special syllable counts and also 
 #   need to rhyme
 print('Sample Sentence:\n====================')
-print(sample_sentence(hmm8, obs_map, n_words=25))
+generate_line(hmm8, syllables, obs_map)
 

@@ -7,6 +7,7 @@
 ########################################
 
 import random
+import re
 
 class HiddenMarkovModel:
     '''
@@ -413,6 +414,82 @@ class HiddenMarkovModel:
 
             next_obs -= 1
             emission.append(next_obs)
+
+            # Sample next state.
+            rand_var = random.uniform(0, 1)
+            next_state = 0
+
+            while rand_var > 0:
+                rand_var -= self.A[state][next_state]
+                next_state += 1
+
+            next_state -= 1
+            state = next_state
+
+        return emission, states
+
+    def generate_line(self, syllables, words, start_state=-1):
+        '''
+        Generates an emission from either the given start state, or a 
+        randomly chosen state.
+
+        Arguments:
+            M:          Length of the emission to generate.
+
+        Returns:
+            emission:   The randomly generated emission as a list.
+
+            states:     The randomly generated states as a list.
+        '''
+
+        emission = []
+        state = start_state
+        if start_state == -1:
+            state = random.choice(range(self.L))
+        states = []
+        num_syllables = 0
+        stressed = 0
+
+        while num_syllables < 10:
+            # Append state.
+            states.append(state)
+
+            # Set up requirements for next word.
+            syllables_left = 10 - num_syllables
+            if syllables_left % 2 == 0:
+                stressed = 0
+            else:
+                stressed = 1
+
+            # Go through all possibilities for next emission. 
+            probs = []
+            for e in range(len(self.O[state])):
+                word = words[e]
+                word = ''.join(filter(lambda x: x.isalpha(), word))
+                if word == '':
+                    probs.append(0)
+                    continue
+
+                # Check for requirements.
+                try:
+                    stress = re.sub(r'[^\d]*', '', ''.join(syllables[word][0]))
+                except KeyError:
+                    probs.append(0)
+                    continue
+
+                num_syls = len(stress)
+                if  num_syls != 1 and \
+                    (int(stress[0]) != stressed or num_syls > syllables_left):
+                    probs.append(0)
+                else:
+                    probs.append(self.O[state][e])
+            
+            probs = [x / sum(probs) for x in probs]
+            e = random.choices(range(self.D), probs)
+            emission.append(e[0])
+            word = words[e[0]]
+            stress = re.sub(r'[^\d]*', '', ''.join(syllables[word][0]))
+            num_syllables += len(stress)
 
             # Sample next state.
             rand_var = random.uniform(0, 1)
