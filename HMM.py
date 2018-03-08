@@ -428,13 +428,16 @@ class HiddenMarkovModel:
 
         return emission, states
 
-    def generate_line(self, syllables, words, start_state=-1, rhyme="."):
+    def generate_line(self, syllables, words, start_state=-1, rhyme="way"): # TODO: should be ".", not "cat"
         '''
         Generates an emission from either the given start state, or a 
         randomly chosen state.
 
         Arguments:
-            M:          Length of the emission to generate.
+            syllables:  Dictionary of pronunciations.
+            words:      Observation map.
+            start_state: Start state.
+            rhyme:      The word to rhyme.
 
         Returns:
             emission:   The randomly generated emission as a list.
@@ -474,20 +477,23 @@ class HiddenMarkovModel:
                 #   1. Number of syllables
                 #   2. Stresses (primary stress must fall in proper place)
                 #   3. Rhyme with given given word if line is completed
+                # TODO: enforce syllables base on rhyme
                 try:
                     stress = re.sub(r'[^\d]*', '', ''.join(syllables[word][0]))
+                    rhymes, pron1, pron2 = self.is_rhyme(rhyme, word, syllables)
                 except KeyError:
                     probs.append(0)
+                    rhymes = False
                     continue
                 try:
                     first_stress = stress.index("1")
                 except:
                     first_stress = 0
-
+                
                 num_syls = len(stress)
-                if num_syls != 1 and \
-                    (first_stress % 2 == stressed or \
-                     num_syls > syllables_left):
+                if (num_syls > syllables_left) or \
+                   ((num_syls != 1 and (first_stress + 1) % 2 != stressed) or \
+                    (num_syls == syllables_left and not rhymes)):
                     probs.append(0)
                 else:
                     probs.append(self.O[state][e])
@@ -514,7 +520,7 @@ class HiddenMarkovModel:
 
         return emission, states
 
-    def is_rhyme(word1, word2, syllables):
+    def is_rhyme(self, word1, word2, syllables):
         '''
         Returns bool representing whether the words rhyme.
         Checks up to 2 syllables of all pronunciations.
@@ -530,7 +536,7 @@ class HiddenMarkovModel:
         
         w1 = syllables[word1]
         w2 = syllables[word2]
-        
+
         # Return true with invalid indices if either word is punctuation
         if len(w1[0]) == 0 or len(w2[0]) == 0:
             return True, -1, -1
