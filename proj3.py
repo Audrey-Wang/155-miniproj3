@@ -1,6 +1,8 @@
 import os
 import numpy as np
 
+from nltk.corpus import cmudict
+
 from HMM import unsupervised_HMM
 from HMM_helper import (
     parse_observations,
@@ -14,8 +16,7 @@ text = open(os.path.join(os.getcwd(), 'data/shakespeare.txt')).read()
 # - some words could be tokenized as bigrams
 # - separate punctuation from words, and store them separately
 obs, obs_map = parse_observations(text)
-# TODO: store syllable_dictionary.txt as a python dictionary for fast lookup
-# TODO: store syllable stress info from CMU for fast lookup
+syllables = cmudict.dict()
 
 # UNSUPERVISED LEARNING
 hmm8 = unsupervised_HMM(obs, 10, 100)
