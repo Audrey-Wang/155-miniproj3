@@ -9,7 +9,7 @@
 import re
 import numpy as np
 import matplotlib.pyplot as plt
-from wordcloud import WordCloud
+#from wordcloud import WordCloud
 from matplotlib import animation
 from matplotlib.animation import FuncAnimation
 

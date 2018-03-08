@@ -11,6 +11,7 @@ from HMM_helper import (
 text = open(os.path.join(os.getcwd(), 'data/shakespeare.txt')).read()
 # TODO: extract words
 # - keep hyphenated words hyphenated
+# - some words could be tokenized as bigrams
 # - separate punctuation from words, and store them separately
 obs, obs_map = parse_observations(text)
 # TODO: store syllable_dictionary.txt as a python dictionary for fast lookup
