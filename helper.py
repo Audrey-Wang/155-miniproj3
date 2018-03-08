@@ -93,7 +93,153 @@ def sample_sentence(hmm, obs_map, n_words=100):
     obs_map_r = obs_map_reverser(obs_map)
 
     # Sample and convert sentence.
-    emission, states = hmm.generate_emission(n_words)
+    emission, states = hmm.generate_line(n_words)
     sentence = [obs_map_r[i] for i in emission]
 
+<<<<<<< HEAD
     return ' '.join(sentence).capitalize() + '...'
+=======
+    return ' '.join(sentence).capitalize() + '...'
+
+def generate_line(hmm, syllables, obs_map):
+    # Get reverse map.
+    obs_map_r = obs_map_reverser(obs_map)
+
+    # Sample and convert sentence.
+    for i in range(14):
+        emission, states = hmm.generate_line(syllables, obs_map_r)
+        sentence = [obs_map_r[i] for i in emission]
+
+        print(' '.join(sentence).capitalize() + '...')
+
+
+####################
+# HMM VISUALIZATION FUNCTIONS
+####################
+
+def visualize_sparsities(hmm, O_max_cols=50, O_vmax=0.1):
+    plt.close('all')
+    plt.set_cmap('viridis')
+
+    # Visualize sparsity of A.
+    plt.imshow(hmm.A, vmax=1.0)
+    plt.colorbar()
+    plt.title('Sparsity of A matrix')
+    plt.show()
+
+    # Visualize parsity of O.
+    plt.imshow(np.array(hmm.O)[:, :O_max_cols], vmax=O_vmax, aspect='auto')
+    plt.colorbar()
+    plt.title('Sparsity of O matrix')
+    plt.show()
+
+
+####################
+# HMM ANIMATION FUNCTIONS
+####################
+
+def animate_emission(hmm, obs_map, M=8, height=12, width=12, delay=1):
+    # Parameters.
+    lim = 1200
+    text_x_offset = 40
+    text_y_offset = 80
+    x_offset = 580
+    y_offset = 520
+    R = 420
+    r = 100
+    arrow_size = 20
+    arrow_p1 = 0.03
+    arrow_p2 = 0.02
+    arrow_p3 = 0.06
+    
+    # Initialize.
+    n_states = len(hmm.A)
+    obs_map_r = obs_map_reverser(obs_map)
+    wordclouds = states_to_wordclouds(hmm, obs_map, max_words=20, show=False)
+
+    # Initialize plot.    
+    fig, ax = plt.subplots()
+    fig.set_figheight(height)
+    fig.set_figwidth(width)
+    ax.grid('off')
+    plt.axis('off')
+    ax.set_xlim([0, lim])
+    ax.set_ylim([0, lim])
+
+    # Plot each wordcloud.
+    for i, wordcloud in enumerate(wordclouds):
+        x = x_offset + int(R * np.cos(np.pi * 2 * i / n_states))
+        y = y_offset + int(R * np.sin(np.pi * 2 * i / n_states))
+        ax.imshow(wordcloud.to_array(), extent=(x - r, x + r, y - r, y + r), aspect='auto', zorder=-1)
+
+    # Initialize text.
+    text = ax.text(text_x_offset, lim - text_y_offset, '', fontsize=24)
+        
+    # Make the arrows.
+    zorder_mult = n_states ** 2 * 100
+    arrows = []
+    for i in range(n_states):
+        row = []
+        for j in range(n_states):
+            # Arrow coordinates.
+            x_i = x_offset + R * np.cos(np.pi * 2 * i / n_states)
+            y_i = y_offset + R * np.sin(np.pi * 2 * i / n_states)
+            x_j = x_offset + R * np.cos(np.pi * 2 * j / n_states)
+            y_j = y_offset + R * np.sin(np.pi * 2 * j / n_states)
+            
+            dx = x_j - x_i
+            dy = y_j - y_i
+            d = np.sqrt(dx**2 + dy**2)
+
+            if i != j:
+                arrow = ax.arrow(x_i + (r/d + arrow_p1) * dx + arrow_p2 * dy,
+                                 y_i + (r/d + arrow_p1) * dy + arrow_p2 * dx,
+                                 (1 - 2 * r/d - arrow_p3) * dx,
+                                 (1 - 2 * r/d - arrow_p3) * dy,
+                                 color=(1 - hmm.A[i][j], ) * 3,
+                                 head_width=arrow_size, head_length=arrow_size,
+                                 zorder=int(hmm.A[i][j] * zorder_mult))
+            else:
+                arrow = ax.arrow(x_i, y_i, 0, 0,
+                                 color=(1 - hmm.A[i][j], ) * 3,
+                                 head_width=arrow_size, head_length=arrow_size,
+                                 zorder=int(hmm.A[i][j] * zorder_mult))
+
+            row.append(arrow)
+        arrows.append(row)
+
+    emission, states = hmm.generate_emission(M)
+
+    def animate(i):
+        if i >= delay:
+            i -= delay
+
+            if i == 0:
+                arrows[states[0]][states[0]].set_color('red')
+            elif i == 1:
+                arrows[states[0]][states[0]].set_color((1 - hmm.A[states[0]][states[0]], ) * 3)
+                arrows[states[i - 1]][states[i]].set_color('red')
+            else:
+                arrows[states[i - 2]][states[i - 1]].set_color((1 - hmm.A[states[i - 2]][states[i - 1]], ) * 3)
+                arrows[states[i - 1]][states[i]].set_color('red')
+
+            # Set text.
+            text.set_text(' '.join([obs_map_r[e] for e in emission][:i+1]).capitalize())
+
+            return arrows + [text]
+
+    # Animate!
+    print('\nAnimating...')
+    anim = FuncAnimation(fig, animate, frames=M+delay, interval=1000)
+
+    return anim
+
+def main():
+    text = open(os.path.join(os.getcwd(), 'data/shakespeare.txt')).read()
+    obs, obs_map = parse_observations(text)
+    #hmm8 = unsupervised_HMM(obs, 5, 20)
+    # print('Sample Sentence:\n====================')
+    # print(sample_sentence(hmm8, obs_map, n_words=25))
+
+main()
+>>>>>>> bc87ec198b9d2c13c618ef781cc069bfb53ba864

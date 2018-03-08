@@ -7,6 +7,7 @@
 ########################################
 
 import random
+import re
 
 class HiddenMarkovModel:
     '''
@@ -427,7 +428,142 @@ class HiddenMarkovModel:
 
         return emission, states
 
+    def generate_line(self, syllables, words, start_state=-1, rhyme="way"): # TODO: should be ".", not "cat"
+        '''
+        Generates an emission from either the given start state, or a 
+        randomly chosen state.
 
+        Arguments:
+            syllables:  Dictionary of pronunciations.
+            words:      Observation map.
+            start_state: Start state.
+            rhyme:      The word to rhyme.
+
+        Returns:
+            emission:   The randomly generated emission as a list.
+
+            states:     The randomly generated states as a list.
+        '''
+
+        emission = []
+        state = start_state
+        if start_state == -1:
+            state = random.choice(range(self.L))
+        states = []
+        num_syllables = 0
+        stressed = 0
+
+        while num_syllables < 10:
+            # Append state.
+            states.append(state)
+
+            # Set up requirements for next word.
+            syllables_left = 10 - num_syllables
+            if syllables_left % 2 == 0:
+                stressed = 0
+            else:
+                stressed = 1
+
+            # Go through all possibilities for next emission. 
+            probs = []
+            for e in range(len(self.O[state])):
+                word = words[e]
+                word = ''.join(filter(lambda x: x.isalpha(), word))
+                if word == '':
+                    probs.append(0)
+                    continue
+
+                # Check for word requirements
+                #   1. Number of syllables
+                #   2. Stresses (primary stress must fall in proper place)
+                #   3. Rhyme with given given word if line is completed
+                # TODO: enforce syllables base on rhyme
+                try:
+                    stress = re.sub(r'[^\d]*', '', ''.join(syllables[word][0]))
+                    rhymes, pron1, pron2 = self.is_rhyme(rhyme, word, syllables)
+                except KeyError:
+                    probs.append(0)
+                    rhymes = False
+                    continue
+                try:
+                    first_stress = stress.index("1")
+                except:
+                    first_stress = 0
+                
+                num_syls = len(stress)
+                if (num_syls > syllables_left) or \
+                   ((num_syls != 1 and (first_stress + 1) % 2 != stressed) or \
+                    (num_syls == syllables_left and not rhymes)):
+                    probs.append(0)
+                else:
+                    probs.append(self.O[state][e])
+            
+                # Check for rhyme !!!! TODO !!!!
+                
+            probs = [x / sum(probs) for x in probs]
+            e = random.choices(range(self.D), probs)
+            emission.append(e[0])
+            word = words[e[0]]
+            stress = re.sub(r'[^\d]*', '', ''.join(syllables[word][0]))
+            num_syllables += len(stress)
+
+            # Sample next state.
+            rand_var = random.uniform(0, 1)
+            next_state = 0
+
+            while rand_var > 0:
+                rand_var -= self.A[state][next_state]
+                next_state += 1
+
+            next_state -= 1
+            state = next_state
+
+        return emission, states
+
+    def is_rhyme(self, word1, word2, syllables):
+        '''
+        Returns bool representing whether the words rhyme.
+        Checks up to 2 syllables of all pronunciations.
+        
+        Arguments:
+            word1, word2:   The two words.
+        
+        Returns:
+            rhyme:          If they rhyme.
+            i:              Ind. of rhyming pronunc. of word1 (-1 if no word)
+            j:              Ind. of rhyming pronunc. of word2 (-1 if no word)
+        '''
+        
+        w1 = syllables[word1]
+        w2 = syllables[word2]
+
+        # Return true with invalid indices if either word is punctuation
+        if len(w1[0]) == 0 or len(w2[0]) == 0:
+            return True, -1, -1
+
+        # Check all pronunciations
+        for i in range(len(w1)):
+            for j in range(len(w2)):
+                num_syllables1 = len(re.sub(r'[^\d]*', '', ''.join(w1[i])))
+                num_syllables2 = len(re.sub(r'[^\d]*', '', ''.join(w2[j])))
+                
+                # Rhyme at most 2 syllables
+                # n = min(2, num_syllables1 - 1, num_syllables2 - 1)
+                n = min(2, num_syllables1, num_syllables2)
+                ind_vowels1 = []
+                for k in range(len(w1[i])):
+                    if len(re.sub(r'[^\d]*', '', w1[i][k])) > 0:
+                        ind_vowels1.append(k)
+                rhyme1 = re.sub(r'[\d]*', '', ''.join(w1[i][ind_vowels1[-n]:]))
+                rhyme2 = re.sub(r'[\d]*', '', ''.join(w2[j][ind_vowels1[-n]:]))
+                
+                # Account for exceptions here: e.g. 'd' and 't', '' and 'h'
+                # TODO?
+                
+                if rhyme1 == rhyme2:
+                    return True, i, j
+        return False, -1, -1
+        
     def probability_alphas(self, x):
         '''
         Finds the maximum probability of a given input sequence using
