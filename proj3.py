@@ -17,6 +17,8 @@ text = open(os.path.join(os.getcwd(), 'data/shakespeare.txt')).read()
 # - separate punctuation from words, and store them separately
 obs, obs_map = parse_observations(text)
 syllables = cmudict.dict()
+for punct in [".", ",", ":", ";", "!", "?"]:
+    syllables.update({punct:[[]]})
 
 # UNSUPERVISED LEARNING
 hmm8 = unsupervised_HMM(obs, 10, 100)
