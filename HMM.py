@@ -470,13 +470,14 @@ class HiddenMarkovModel:
                     probs.append(0)
                     continue
 
-                # Check for requirements.
+                # Check for stress
                 try:
                     stress = re.sub(r'[^\d]*', '', ''.join(syllables[word][0]))
                 except KeyError:
                     probs.append(0)
                     continue
 
+                # Check for line length (10 syllables)
                 num_syls = len(stress)
                 if  num_syls != 1 and \
                     (int(stress[0]) != stressed or num_syls > syllables_left):
@@ -504,7 +505,43 @@ class HiddenMarkovModel:
 
         return emission, states
 
-
+    def is_rhyme(word1, word2, syllables):
+        '''
+        Returns bool representing whether w1 and w2 rhyme.
+        Checks up to 2 syllables.
+        
+        Arguments:
+            word1, word2:   The two words.
+        
+        Returns:
+            rhyme:          Whether they rhyme.
+            i:              Ind. of rhyming pronunc. of word1 (-1 if no rhyme)
+            j:              Ind. of rhyming pronunc. of word2 (-1 if no rhyme)
+        '''
+        w1 = syllables[word1]
+        w2 = syllables[word2]
+        for i in range(len(w1)):
+            for j in range(len(w2)):
+                num_syllables1 = len(re.sub(r'[^\d]*', '', ''.join(w1[i])))
+                num_syllables2 = len(re.sub(r'[^\d]*', '', ''.join(w2[j])))
+                
+                # Rhyme at most 2 syllables
+                # n = min(2, num_syllables1 - 1, num_syllables2 - 1)
+                n = min(2, num_syllables1, num_syllables2)
+                ind_vowels1 = []
+                for k in range(len(w1[i])):
+                    if len(re.sub(r'[^\d]*', '', w1[i][k])) > 0:
+                        ind_vowels1.append(k)
+                rhyme1 = re.sub(r'[\d]*', '', ''.join(w1[i][ind_vowels1[-n]:]))
+                rhyme2 = re.sub(r'[\d]*', '', ''.join(w2[j][ind_vowels1[-n]:]))
+                
+                # Account for exceptions here: e.g. 'd' and 't', '' and 'h'
+                # TODO?
+                
+                if rhyme1 == rhyme2:
+                    return True, i, j
+        return False, -1, -1
+        
     def probability_alphas(self, x):
         '''
         Finds the maximum probability of a given input sequence using
