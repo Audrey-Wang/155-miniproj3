@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 from matplotlib import animation
 from matplotlib.animation import FuncAnimation
+from HMM import unsupervised_HMM
 
 import os
 import numpy as np
@@ -40,7 +41,7 @@ def mask():
 # HMM FUNCTIONS
 ####################
 
-#preprocessing done in the below function
+#pre-processing
 def parse_observations(text):
     # Convert text to dataset.
     lines = [line.split() for line in text.split('\n') if line.split()]
@@ -48,22 +49,18 @@ def parse_observations(text):
     obs_counter = 0
     obs = []
     obs_map = {}
-    print("in func")
     for line in lines:
         obs_elem = []
         for word in line:
-            print(word)
             #store puncuation as "words" in obs_map
             puncuation = [':', ';', '.', ',', '!', '?']
             end = 0
             for punc in puncuation:
                 if word[-1] == punc:
                     end, endp = 1, punc
-                    print(endp)
                     break
             #keep hypens and apostrophes
             word = re.sub(r'[^\w\-\']', '', word).lower()
-            print(word)
 
             if word not in obs_map:
                 # Add unique words to the observations map.
@@ -81,11 +78,7 @@ def parse_observations(text):
         # Add the encoded sequence.
         obs.append(obs_elem)
 
-    print(obs_map)
     return obs, obs_map
-
-text = open(os.path.join(os.getcwd(), 'data/shakespeare.txt')).read()
-parse_observations(text)
 
 def obs_map_reverser(obs_map):
     obs_map_r = {}
@@ -227,7 +220,11 @@ def animate_emission(hmm, obs_map, M=8, height=12, width=12, delay=1):
 
     return anim
 
-    # honestly this function is so jank but who even fuckin cares
-    # i don't even remember how or why i wrote this mess
-    # no one's gonna read this
-    # hey if you see this tho hmu on fb let's be friends
+def main():
+    text = open(os.path.join(os.getcwd(), 'data/shakespeare.txt')).read()
+    obs, obs_map = parse_observations(text)
+    hmm8 = unsupervised_HMM(obs, 5, 20)
+    print('Sample Sentence:\n====================')
+    print(sample_sentence(hmm8, obs_map, n_words=25))
+
+main()
