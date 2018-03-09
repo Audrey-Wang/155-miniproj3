@@ -466,12 +466,14 @@ class HiddenMarkovModel:
 
             # Go through all possibilities for next emission. 
             probs = []
+            syllable_counts = []
             for e in range(len(self.O[state])):
                 word = words[e]
                 word = ''.join(filter(lambda x: x.isalpha(), word))
                 word_for_stress = word
                 if word == '':
                     probs.append(0)
+                    syllable_counts.append(0)
                     continue
                 if word[0] == "'":
                     word_for_stress = word[1:]
@@ -488,6 +490,7 @@ class HiddenMarkovModel:
                     rhymes, pron1, pron2 = self.is_rhyme(rhyme, word_for_stress, syllables)
                 except KeyError:
                     probs.append(0)
+                    syllable_counts.append(0)
                     rhymes = False
                     continue
                 try:
@@ -496,6 +499,7 @@ class HiddenMarkovModel:
                     first_stress = 0
                 
                 num_syls = len(stress)
+                syllable_counts.append(num_syls)
                 if (num_syls > syllables_left) or \
                    ((num_syls != 1 and (first_stress + 1) % 2 != stressed) or \
                     (num_syls == syllables_left and not rhymes)):
@@ -509,12 +513,7 @@ class HiddenMarkovModel:
             e = random.choices(range(self.D), probs)[0]
             emission.append(e)
             word = words[e]
-            if word[0] == "'":
-                word_for_stress = word[1:]
-            if len(word) > 2 and word[-2] == "'":
-                word_for_stress = word[:-2]
-            stress = re.sub(r'[^\d]*', '', ''.join(syllables[word_for_stress][0]))
-            num_syllables += len(stress)
+            num_syllables += syllable_counts[e]
 
             # Sample next state.
             rand_var = random.uniform(0, 1)
