@@ -11,7 +11,8 @@ from helper import (
 )
 
 # PREPROCESSING
-text = open(os.path.join(os.getcwd(), 'data/shakespeare.txt')).read()
+# text = open(os.path.join(os.getcwd(), 'data/shakespeare.txt')).read()
+text = open(os.path.join(os.getcwd(), 'data/allpoems.txt')).read()
 # TODO: extract words
 # - keep hyphenated words hyphenated
 # - some words could be tokenized as bigrams
