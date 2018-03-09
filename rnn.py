@@ -1,5 +1,5 @@
 from keras.models import Sequential
-from P3CHelpers import *
+from rnn_helper import *
 import sys
 
 from keras.layers import Dense, Activation, Dropout
