@@ -45,6 +45,8 @@ def mask():
 def parse_observations(text):
     # Convert text to dataset.
     lines = [line.split() for line in text.split('\n') if line.split()]
+    # Get rid of blank lines. 
+    lines = list(line for line in lines if line)
 
     dig_ = 0
     obs_counter = 0
@@ -66,7 +68,7 @@ def parse_observations(text):
                     end, endp = 1, punc
                     break
             #keep hypens and apostrophes
-            word = re.sub(r'[^\w\-\']', '', word).lower()
+            word = re.sub(r'[^\w\']', '', word).lower()
 
             if word not in obs_map:
                 # Add unique words to the observations map.
