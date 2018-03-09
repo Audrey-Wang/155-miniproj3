@@ -6,8 +6,7 @@ from nltk.corpus import cmudict
 from HMM import unsupervised_HMM
 from helper import (
     parse_observations,
-    generate_quatrain,
-    generate_couplet,
+    generate_haiku
 )
 
 # PREPROCESSING
@@ -34,11 +33,5 @@ hmm8 = unsupervised_HMM(obs, 10, 50)
 # - keep in mind last words may have special syllable counts and also 
 #   need to rhyme
 print('Sample Sentence:\n====================')
-generate_quatrain(hmm8, syllables, obs_map)
-print()
-generate_quatrain(hmm8, syllables, obs_map)
-print() 
-generate_quatrain(hmm8, syllables, obs_map)
-print()
-generate_couplet(hmm8, syllables, obs_map)
+generate_haiku(hmm8, syllables, obs_map)
 

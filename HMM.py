@@ -428,7 +428,7 @@ class HiddenMarkovModel:
 
         return emission, states
 
-    def generate_line(self, syllables, words, start_state=-1, rhyme="."): # TODO: should be ".", not "cat"
+    def generate_line(self, syllables, words, num_s, start_state=-1): # TODO: should be ".", not "cat"
         '''
         Generates an emission from either the given start state, or a 
         randomly chosen state.
@@ -453,16 +453,12 @@ class HiddenMarkovModel:
         num_syllables = 0
         stressed = 0
 
-        while num_syllables < 10:
+        while num_syllables < num_s:
             # Append state.
             states.append(state)
 
             # Set up requirements for next word.
-            syllables_left = 10 - num_syllables
-            if syllables_left % 2 == 0:
-                stressed = 0
-            else:
-                stressed = 1
+            syllables_left = num_s - num_syllables
 
             # Go through all possibilities for next emission. 
             probs = []
@@ -470,15 +466,15 @@ class HiddenMarkovModel:
             for e in range(len(self.O[state])):
                 word = words[e]
                 word = ''.join(filter(lambda x: x.isalpha(), word))
-                word_for_stress = word
+                word_for_syl = word
                 if word == '':
                     probs.append(0)
                     syllable_counts.append(0)
                     continue
                 if word[0] == "'":
-                    word_for_stress = word[1:]
+                    word_for_syl = word[1:]
                 if len(word) > 2 and word[-2] == "'":
-                    word_for_stress = word[:-2]
+                    word_for_syl= word[:-2]
 
                 # Check for word requirements
                 #   1. Number of syllables
@@ -486,23 +482,16 @@ class HiddenMarkovModel:
                 #   3. Rhyme with given given word if line is completed
                 # TODO: enforce syllables base on rhyme
                 try:
-                    stress = re.sub(r'[^\d]*', '', ''.join(syllables[word_for_stress][0]))
-                    rhymes, pron1, pron2 = self.is_rhyme(rhyme, word_for_stress, syllables)
+                    stress = re.sub(r'[^\d]*', '', ''.join(syllables[word_for_syl][0]))
                 except KeyError:
                     probs.append(0)
                     syllable_counts.append(0)
                     rhymes = False
                     continue
-                try:
-                    first_stress = stress.index("1")
-                except:
-                    first_stress = 0
                 
                 num_syls = len(stress)
                 syllable_counts.append(num_syls)
-                if (num_syls > syllables_left) or \
-                   ((num_syls != 1 and (first_stress + 1) % 2 != stressed) or \
-                    (num_syls == syllables_left and not rhymes)):
+                if num_syls > syllables_left:
                     probs.append(0)
                 else:
                     probs.append(self.O[state][e])
