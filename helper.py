@@ -52,6 +52,8 @@ def parse_observations(text):
     for line in lines:
         obs_elem = []
         for word in line:
+            if word.isdigit():
+                continue
             #store puncuation as "words" in obs_map
             puncuation = [':', ';', '.', ',', '!', '?']
             end = 0
@@ -77,7 +79,7 @@ def parse_observations(text):
 
         # Add the encoded sequence.
         obs.append(obs_elem)
-
+    print(obs_map)
     return obs, obs_map
 
 def obs_map_reverser(obs_map):
