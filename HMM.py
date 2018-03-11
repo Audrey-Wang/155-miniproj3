@@ -453,6 +453,8 @@ class HiddenMarkovModel:
         num_syllables = 0
         stressed = 0
 
+        punctuation = [':', ';', '.', ',', '!', '?']
+
         while num_syllables < 10:
             # Append state.
             states.append(state)
@@ -471,7 +473,7 @@ class HiddenMarkovModel:
                 word = words[e]
                 word = ''.join(filter(lambda x: x.isalpha(), word))
                 word_for_stress = word
-                if word == '':
+                if word == '' or (len(emission) > 0 and e == emission[-1]):
                     probs.append(0)
                     syllable_counts.append(0)
                     continue
@@ -500,7 +502,9 @@ class HiddenMarkovModel:
                 
                 num_syls = len(stress)
                 syllable_counts.append(num_syls)
-                if (num_syls > syllables_left) or \
+                if word == rhyme:
+                    probs.append(self.O[state][e] / 10.0)
+                elif (num_syls > syllables_left) or \
                    ((num_syls != 1 and (first_stress + 1) % 2 != stressed) or \
                     (num_syls == syllables_left and not rhymes)):
                     probs.append(0)
@@ -548,6 +552,8 @@ class HiddenMarkovModel:
         # Return true with invalid indices if either word is punctuation
         if len(w1[0]) == 0 or len(w2[0]) == 0:
             return True, -1, -1
+        
+        if w1 == w2: return False, -1, -1
 
         # Check all pronunciations
         for i in range(len(w1)):

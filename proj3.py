@@ -23,7 +23,7 @@ for punct in [".", ",", ":", ";", "!", "?"]:
     syllables.update({punct:[[]]})
 
 # UNSUPERVISED LEARNING
-hmm8 = unsupervised_HMM(obs, 10, 50)
+hmm8 = unsupervised_HMM(obs, 20, 100)
 
 # POETRY GENERATION, PART 1: HMMs
 # TODO: write poem generation using hmm.generate_emission()
