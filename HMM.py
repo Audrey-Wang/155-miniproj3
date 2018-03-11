@@ -486,7 +486,7 @@ class HiddenMarkovModel:
                 #   1. Number of syllables
                 #   2. Stresses (primary stress must fall in proper place)
                 #   3. Rhyme with given given word if line is completed
-                # TODO: enforce syllables base on rhyme
+                # (Syllable count is based on first pronunciation given)
                 try:
                     stress = re.sub(r'[^\d]*', '', ''.join(syllables[word_for_stress][0]))
                     rhymes, pron1, pron2 = self.is_rhyme(rhyme, word_for_stress, syllables)
@@ -510,9 +510,7 @@ class HiddenMarkovModel:
                     probs.append(0)
                 else:
                     probs.append(self.O[state][e])
-            
-                # Check for rhyme !!!! TODO !!!!
-                
+                            
             probs = [x / sum(probs) for x in probs]
             e = random.choices(range(self.D), probs)[0]
             emission.append(e)
