@@ -62,11 +62,8 @@ def sample(preds, temperature=1.0):
     return np.argmax(probas)
 
 
-def on_epoch_end(epoch, logs):
-    # Function invoked at end of each epoch. Prints generated text.
-    print()
-    print('----- Generating text after Epoch: %d' % epoch)
-    
+def on_train_end(logs):
+    # Function invoked at end of training. Prints generated text.
     for diversity in [0.25, 0.75, 1.5]:
         print('----- diversity:', diversity)
 
@@ -92,7 +89,7 @@ def on_epoch_end(epoch, logs):
             sys.stdout.flush()
         print()
 
-print_callback = LambdaCallback(on_epoch_end=on_epoch_end)
+print_callback = LambdaCallback(on_train_end=on_train_end)
 
 model.fit(x, y,
           batch_size=128,
