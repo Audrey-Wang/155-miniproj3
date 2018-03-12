@@ -8,11 +8,14 @@ from helper import (
     parse_observations,
     generate_quatrain,
     generate_couplet,
+    text_to_wordcloud,
 )
 
 # PREPROCESSING
 # text = open(os.path.join(os.getcwd(), 'data/shakespeare.txt')).read()
 text = open(os.path.join(os.getcwd(), 'data/allpoems.txt')).read()
+# visualization of whole data set
+wordcloud = text_to_wordcloud(text, title='Shakespeare')
 # TODO: extract words
 # - keep hyphenated words hyphenated
 # - some words could be tokenized as bigrams
@@ -23,7 +26,17 @@ for punct in [".", ",", ":", ";", "!", "?"]:
     syllables.update({punct:[[]]})
 
 # UNSUPERVISED LEARNING
-hmm8 = unsupervised_HMM(obs, 20, 100)
+#Was 20
+hmm8 = unsupervised_HMM(obs, 10, 100)
+
+# visualizations of sparsity of A, O as well as
+# visualizations of states as wordclouds
+visualize_sparsities(hmm8, O_max_cols=50)
+wordclouds = states_to_wordclouds(hmm8, obs_map)
+
+#This part only works in Jupyter Notebook
+anim = animate_emission(hmm8, obs_map, M=8)
+HTML(anim.to_html5_video())
 
 # POETRY GENERATION, PART 1: HMMs
 # TODO: write poem generation using hmm.generate_emission()
