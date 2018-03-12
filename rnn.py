@@ -1,93 +1,69 @@
-from keras.models import Sequential
-from rnn_helper import *
+TEMP = 1.5
+
 import sys
+import numpy as np
+import re
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import Dropout
+from keras.layers import LSTM, Lambda
+from keras.callbacks import ModelCheckpoint
+from keras.utils import np_utils
 
-from keras.layers import Dense, Activation, Dropout
-from keras.layers import Conv2D, MaxPooling2D, Flatten, LSTM, Embedding
-from keras import regularizers
-
-'''
-RECURRENT NEURAL NETWORK POETRY GENERATION IMPLEMENTATION
-Train a character-based LSTM -> single layer of 100-200 LSTM units
-fully-connected output layer with softmax nonlinearity
-
-minimize categorial cross-entropy
-train for a sufficient # of epochs so that loss converges
-do not need to keep track of overfitting / keep a validation set
-
-training data: sequences of 40 chars from sonnet corpus
-take all possible subsequences of 40 consecutive chars from dataset
-pick only sequences starting every nth char
-
-generate poems -> draw softmax samples from trained models
-play with temperature parameter, which controls variance of sampled text
-'''
-
-num_letters = 26
-
-
-def rnn():
-	filename = "data/shakespeare.txt"
-# Load in a list of words from the specified file; remove non-alphanumeric characters
-# and make all chars lowercase.
-# TODO edit load_word_list for preprocessing of data
-	chars = get_chars(load_word_list(filename))
-	num = len(chars)
-	n = num // 40 // 10
-
-	# Create dictionary mapping letters to their one-hot-encoded index
-	let_to_index = generate_onehot_dict(chars)
-	# Create training data
-	# while (i != n):
-	# 	trainX, trainY = generate_traindata(chars[i:i+40], let_to_index)
-
-	trainX, trainY = generate_traindata(let_to_index, chars[0:41])
-
-	trainX = np.reshape(trainX, (40, 1, 26))
-	#trainX = np.reshape(trainX, (1, 1040,))
-	model = Sequential()
-	#100 to 200 units
-	#model.add(Embedding(num_letters, output_dim = 256))
-	model.add(LSTM(26, input_shape = (1, 26), return_sequences = True))
-	#model.add(LSTM(26, input_shape = (1,26*40), return_sequences = False))
-
-	print(model.output_shape)
-	#model.add(LSTM(150, return_sequences = True, batch_size = 32, stateful = True, input_shape = (num_letters, )))
-	model.add(Dense(26, activation = 'softmax'))
-
-	model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
-
-	model.fit(trainX, trainY, epochs=10, batch_size=32)
-
-	score = model.evaluate(trainX, trainY, verbose=0)
-	print(score)
-
-	x, y = generate_traindata(chars[0:41], let_to_index)
-	prediction = model.predict_on_batch(y)
-	print(prediction)
-	# prediction[(prediction.tolist()).index(max(prediction))] = 1.
-	# for i in range(0, len(prediction)):
-	# 	if i != (prediction.tolist()).index(max(prediction)):
-	# 		prediction[i] = 0.
-	# start = one_hot_to_let(let_to_index, prediction)
-	# print(start)
-rnn()
-
-# # vocab_size = number of unique words in our text file. Will be useful when adding layers
-# # to your neural network
-# vocab_size = len(word_to_index)
-# model = Sequential()
-# model.add(Dense(num_latent_factors, input_shape=(vocab_size,)))
-# model.add(Dense(vocab_size, activation = 'softmax'))
-
-# model.compile(optimizer='rmsprop',
-#           loss='categorical_crossentropy',
-#           metrics=['accuracy'])
-
-# model.fit(trainX, trainY, epochs=10, batch_size=32)
-# # Extract weights for hidden layer, set <weights> variable below
-# weights = (model.layers[0].get_weights())[0]
-
-# print("Hidden Layer weights dimension: ", weights.shape)
-
-# weightsoutput = (model.layers[1].get_weights())[0]
+# load ascii text and covert to lowercase
+filename = "data/shakespeare.txt"
+raw_text = open(filename).read()
+raw_text = raw_text.lower()
+raw_text = re.sub(r'\d+', '', raw_text)
+# create mapping of unique chars to integers
+chars = sorted(list(set(raw_text)))
+char_to_int = dict((c, i) for i, c in enumerate(chars))
+int_to_char = dict((i, c) for i, c in enumerate(chars))
+# summarize the loaded data
+n_chars = len(raw_text)
+n_vocab = len(chars)
+print("Total Characters: ", n_chars)
+print("Total Vocab: ", n_vocab)
+# prepare the dataset of input to output pairs encoded as integers
+seq_length = 40
+dataX = []
+dataY = []
+for i in range(0, n_chars - seq_length, 3):
+	seq_in = raw_text[i:i + seq_length]
+	seq_out = raw_text[i + seq_length]
+	dataX.append([char_to_int[char] for char in seq_in])
+	dataY.append(char_to_int[seq_out])
+n_patterns = len(dataX)
+print("Total Patterns: ", n_patterns)
+# reshape X to be [samples, time steps, features]
+X = np.reshape(dataX, (n_patterns, seq_length, 1))
+# normalize
+X = X / float(n_vocab)
+# one hot encode the output variable
+y = np_utils.to_categorical(dataY)
+# define the LSTM model
+model = Sequential()
+model.add(LSTM(200, input_shape=(X.shape[1], X.shape[2])))
+# model.add(Dropout(0.2))
+model.add(Lambda(lambda x: x / TEMP))
+model.add(Dense(y.shape[1], activation='softmax'))
+model.compile(loss='categorical_crossentropy', optimizer='adam')
+# fit the model
+model.fit(X, y, epochs=40, batch_size=128)
+start = np.random.randint(0, len(dataX)-1)
+seed = "shall i compare thee to a summer's day?\n"
+pattern = [char_to_int[char] for char in seed]
+print("Seed:")
+print("\"", ''.join([int_to_char[value] for value in pattern]), "\"")
+# generate characters
+for i in range(400):
+	x = np.reshape(pattern, (1, len(pattern), 1))
+	x = x / float(n_vocab)
+	prediction = model.predict(x, verbose=0)
+	index = np.argmax(prediction)
+	result = int_to_char[index]
+	seq_in = [int_to_char[value] for value in pattern]
+	sys.stdout.write(result)
+	pattern.append(index)
+	pattern = pattern[1:len(pattern)]
+print("\nDone.")
