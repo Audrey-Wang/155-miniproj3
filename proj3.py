@@ -34,6 +34,9 @@ hmm8 = unsupervised_HMM(obs, 10, 100)
 visualize_sparsities(hmm8, O_max_cols=50)
 wordclouds = states_to_wordclouds(hmm8, obs_map)
 
+#This part only works in Jupyter Notebook
+anim = animate_emission(hmm8, obs_map, M=8)
+HTML(anim.to_html5_video())
 
 # POETRY GENERATION, PART 1: HMMs
 # TODO: write poem generation using hmm.generate_emission()
