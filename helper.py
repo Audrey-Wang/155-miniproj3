@@ -273,10 +273,9 @@ def main():
     visualize_sparsities(hmm8, O_max_cols=50)
     wordclouds = states_to_wordclouds(hmm8, obs_map)
 
-    #print("animate_emission")
-    #anim = animate_emission(hmm8, obs_map, M=8)
-    '''This part only works in Jupyter Notebook
+    print("animate_emission")
+    anim = animate_emission(hmm8, obs_map, M=8)
+    #This part only works in Jupyter Notebook
     HTML(anim.to_html5_video())
-    '''
 
 main()

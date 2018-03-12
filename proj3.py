@@ -4,12 +4,7 @@ import numpy as np
 from nltk.corpus import cmudict
 
 from HMM import unsupervised_HMM
-from helper import (
-    parse_observations,
-    generate_quatrain,
-    generate_couplet,
-    text_to_wordcloud,
-)
+from helper import *
 
 # PREPROCESSING
 # text = open(os.path.join(os.getcwd(), 'data/shakespeare.txt')).read()
