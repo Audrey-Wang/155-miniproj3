@@ -1,69 +1,97 @@
-TEMP = 1.5
-
-import sys
-import numpy as np
 import re
+from keras.callbacks import LambdaCallback
 from keras.models import Sequential
-from keras.layers import Dense
-from keras.layers import Dropout
-from keras.layers import LSTM, Lambda
-from keras.callbacks import ModelCheckpoint
-from keras.utils import np_utils
+from keras.layers import Dense, Activation
+from keras.layers import LSTM
+from keras.optimizers import RMSprop
+from keras.utils.data_utils import get_file
+import numpy as np
+import random
+import sys
+import io
 
-# load ascii text and covert to lowercase
 filename = "data/shakespeare.txt"
 raw_text = open(filename).read()
 raw_text = raw_text.lower()
-raw_text = re.sub(r'\d+', '', raw_text)
-# create mapping of unique chars to integers
-chars = sorted(list(set(raw_text)))
-char_to_int = dict((c, i) for i, c in enumerate(chars))
-int_to_char = dict((i, c) for i, c in enumerate(chars))
-# summarize the loaded data
-n_chars = len(raw_text)
-n_vocab = len(chars)
-print("Total Characters: ", n_chars)
-print("Total Vocab: ", n_vocab)
-# prepare the dataset of input to output pairs encoded as integers
-seq_length = 40
-dataX = []
-dataY = []
-for i in range(0, n_chars - seq_length, 3):
-	seq_in = raw_text[i:i + seq_length]
-	seq_out = raw_text[i + seq_length]
-	dataX.append([char_to_int[char] for char in seq_in])
-	dataY.append(char_to_int[seq_out])
-n_patterns = len(dataX)
-print("Total Patterns: ", n_patterns)
-# reshape X to be [samples, time steps, features]
-X = np.reshape(dataX, (n_patterns, seq_length, 1))
-# normalize
-X = X / float(n_vocab)
-# one hot encode the output variable
-y = np_utils.to_categorical(dataY)
-# define the LSTM model
+text = re.sub(r'\d+', '', raw_text)
+text = re.sub(r'\d+', '', raw_text)
+print('corpus length:', len(text))
+
+chars = sorted(list(set(text)))
+print('total chars:', len(chars))
+char_indices = dict((c, i) for i, c in enumerate(chars))
+indices_char = dict((i, c) for i, c in enumerate(chars))
+
+# cut the text in semi-redundant sequences of maxlen characters
+maxlen = 40
+step = 3
+sentences = []
+next_chars = []
+for i in range(0, len(text) - maxlen, step):
+    sentences.append(text[i: i + maxlen])
+    next_chars.append(text[i + maxlen])
+print('nb sequences:', len(sentences))
+
+print('Vectorization...')
+x = np.zeros((len(sentences), maxlen, len(chars)), dtype=np.bool)
+y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
+for i, sentence in enumerate(sentences):
+    for t, char in enumerate(sentence):
+        x[i, t, char_indices[char]] = 1
+    y[i, char_indices[next_chars[i]]] = 1
+
+
+# build the model: a single LSTM
+print('Build model...')
 model = Sequential()
-model.add(LSTM(200, input_shape=(X.shape[1], X.shape[2])))
-# model.add(Dropout(0.2))
-model.add(Lambda(lambda x: x / TEMP))
-model.add(Dense(y.shape[1], activation='softmax'))
-model.compile(loss='categorical_crossentropy', optimizer='adam')
-# fit the model
-model.fit(X, y, epochs=40, batch_size=128)
-start = np.random.randint(0, len(dataX)-1)
-seed = "shall i compare thee to a summer's day?\n"
-pattern = [char_to_int[char] for char in seed]
-print("Seed:")
-print("\"", ''.join([int_to_char[value] for value in pattern]), "\"")
-# generate characters
-for i in range(400):
-	x = np.reshape(pattern, (1, len(pattern), 1))
-	x = x / float(n_vocab)
-	prediction = model.predict(x, verbose=0)
-	index = np.argmax(prediction)
-	result = int_to_char[index]
-	seq_in = [int_to_char[value] for value in pattern]
-	sys.stdout.write(result)
-	pattern.append(index)
-	pattern = pattern[1:len(pattern)]
-print("\nDone.")
+model.add(LSTM(128, input_shape=(maxlen, len(chars))))
+model.add(Dense(len(chars)))
+model.add(Activation('softmax'))
+
+optimizer = RMSprop(lr=0.01)
+model.compile(loss='categorical_crossentropy', optimizer=optimizer)
+
+
+def sample(preds, temperature=1.0):
+    # helper function to sample an index from a probability array
+    preds = np.asarray(preds).astype('float64')
+    preds = np.log(preds) / temperature
+    exp_preds = np.exp(preds)
+    preds = exp_preds / np.sum(exp_preds)
+    probas = np.random.multinomial(1, preds, 1)
+    return np.argmax(probas)
+
+
+def on_train_end(logs):
+    # Function invoked at end of training. Prints generated text.
+    for diversity in [0.25, 0.75, 1.5]:
+        print('----- diversity:', diversity)
+
+        generated = ''
+        sentence = "shall i compare thee to a summer's day?\n"
+        generated += sentence
+        print('----- Generating with seed: "' + sentence + '"')
+        sys.stdout.write(generated)
+
+        for i in range(400):
+            x_pred = np.zeros((1, maxlen, len(chars)))
+            for t, char in enumerate(sentence):
+                x_pred[0, t, char_indices[char]] = 1.
+
+            preds = model.predict(x_pred, verbose=0)[0]
+            next_index = sample(preds, diversity)
+            next_char = indices_char[next_index]
+
+            generated += next_char
+            sentence = sentence[1:] + next_char
+
+            sys.stdout.write(next_char)
+            sys.stdout.flush()
+        print()
+
+print_callback = LambdaCallback(on_train_end=on_train_end)
+
+model.fit(x, y,
+          batch_size=128,
+          epochs=60,
+          callbacks=[print_callback])
